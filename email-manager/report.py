@@ -28,6 +28,32 @@ def save_email_report(results):
 
     print(f"Report saved: {path}")
 
+def save_mailbox_stats(
+    total_mailbox_count,
+    scanned_count
+):
+
+    import pandas as pd
+
+    df = pd.DataFrame([
+        {
+            "Total Mailbox Emails":
+            total_mailbox_count,
+
+            "Scanned Emails":
+            scanned_count
+        }
+    ])
+
+    df.to_csv(
+        "reports/mailbox_stats.csv",
+        index=False
+    )
+
+    print(
+        "Saved: reports/mailbox_stats.csv"
+    )
+
 
 def save_category_summary(results):
 
