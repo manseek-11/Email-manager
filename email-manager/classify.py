@@ -94,6 +94,17 @@ CATEGORY_RULES = {
         "instagram",
         "twitter",
         "x.com"
+    ],
+    "Protected": [
+        "rws",
+        "trainai",
+        "train ai",
+        "rws group",
+        "rws holdings",
+        "ai testing",
+        "linguistic testing",
+        "assessment",
+        "language assessment"
     ]
 }
 
