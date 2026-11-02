@@ -8,6 +8,15 @@ import imaplib
 
 from classify import categorize
 
+PROTECTED_CATEGORIES = [
+    "Protected"
+]
+
+if CATEGORY in PROTECTED_CATEGORIES:
+    raise Exception(
+        "Protected category cannot be deleted."
+    )
+
 EMAIL_ID = os.getenv("EMAIL_ID")
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 CATEGORY = os.getenv("CATEGORY")
