@@ -282,7 +282,6 @@ def main():
     save_mailbox_stats(
         total_mail_count,
         scanned_count,
-        len(sender_counter)
     )
 
     # ==========================================
