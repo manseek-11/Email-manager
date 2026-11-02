@@ -4,23 +4,23 @@ A Python-based Gmail Inbox Manager that scans, categorizes, analyzes, and helps 
 
 ## Features
 
-✅ Secure Gmail Login using App Password
+- Secure Gmail Login using App Password
 
-✅ Scan Inbox Emails
+- Scan Inbox Emails
 
-✅ Categorize Emails Automatically
+- Categorize Emails Automatically
 
-✅ Generate CSV Reports
+- Generate CSV Reports
 
-✅ View Top Email Senders
+- View Top Email Senders
 
-✅ Bulk Delete Emails by Category
+- Bulk Delete Emails by Category
 
-✅ Fully Local Processing
+- Fully Local Processing
 
-✅ No AI Required
+- No AI Required
 
-✅ No External Services
+- No External Services
 
 ---
 
