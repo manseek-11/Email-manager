@@ -9,8 +9,13 @@ from classify import categorize
 from report import (
     save_email_report,
     save_category_summary,
-    save_sender_summary
+    save_sender_summary,
+    save_mailbox_stats
 )
+
+# ==========================================
+# Gmail Configuration
+# ==========================================
 
 IMAP_SERVER = "imap.gmail.com"
 IMAP_PORT = 993
@@ -19,10 +24,16 @@ MAX_EMAILS = int(
     os.getenv("MAX_EMAILS", "500")
 )
 
+# ==========================================
+# Decode Email Text
+# ==========================================
 
 def decode_text(text):
 
     try:
+
+        if not text:
+            return ""
 
         decoded = decode_header(text)[0]
 
@@ -37,9 +48,13 @@ def decode_text(text):
 
         return decoded[0]
 
-    except:
-        return text
+    except Exception:
+        return str(text)
 
+
+# ==========================================
+# Extract Email Body
+# ==========================================
 
 def get_body(msg):
 
@@ -51,16 +66,30 @@ def get_body(msg):
 
             for part in msg.walk():
 
-                if (
+                content_type = (
                     part.get_content_type()
-                    == "text/plain"
+                )
+
+                disposition = str(
+                    part.get(
+                        "Content-Disposition"
+                    )
+                )
+
+                if (
+                    content_type == "text/plain"
+                    and "attachment"
+                    not in disposition.lower()
                 ):
 
-                    payload = part.get_payload(
-                        decode=True
+                    payload = (
+                        part.get_payload(
+                            decode=True
+                        )
                     )
 
                     if payload:
+
                         body = payload.decode(
                             errors="ignore"
                         )
@@ -79,11 +108,15 @@ def get_body(msg):
                     errors="ignore"
                 )
 
-    except:
+    except Exception:
         pass
 
     return body[:5000]
 
+
+# ==========================================
+# Main Program
+# ==========================================
 
 def main():
 
@@ -93,6 +126,16 @@ def main():
 
     password = os.getenv(
         "APP_PASSWORD"
+    )
+
+    if not email_id or not password:
+
+        raise Exception(
+            "EMAIL_ID or APP_PASSWORD missing."
+        )
+
+    print(
+        "\nConnecting to Gmail..."
     )
 
     mail = imaplib.IMAP4_SSL(
@@ -105,22 +148,46 @@ def main():
         password
     )
 
-    mail.select(
-        "INBOX"
+    print(
+        "Login successful."
     )
 
-    _, data = mail.search(
+    mail.select("INBOX")
+
+    status, data = mail.search(
         None,
         "ALL"
     )
 
+    if status != "OK":
+
+        raise Exception(
+            "Failed to read mailbox."
+        )
+
     ids = data[0].split()
 
+    # Total emails currently present
+    total_mailbox_count = len(ids)
+
+    print(
+        f"\nTotal Emails in Mailbox: "
+        f"{total_mailbox_count}"
+    )
+
+    # Limit emails to scan
     ids = ids[-MAX_EMAILS:]
+
+    print(
+        f"Scanning Latest: "
+        f"{len(ids)} Emails\n"
+    )
 
     results = []
 
     sender_counter = Counter()
+
+    scanned_count = 0
 
     for eid in reversed(ids):
 
@@ -131,11 +198,12 @@ def main():
                 "(RFC822)"
             )
 
-            raw = msg_data[0][1]
+            raw_email = msg_data[0][1]
 
             msg = (
-                email
-                .message_from_bytes(raw)
+                email.message_from_bytes(
+                    raw_email
+                )
             )
 
             subject = decode_text(
@@ -166,27 +234,57 @@ def main():
 
             results.append(
                 {
-                    "id": eid.decode(),
-                    "subject": subject,
-                    "sender": sender,
-                    "category": category
+                    "id":
+                    eid.decode(),
+
+                    "subject":
+                    subject,
+
+                    "sender":
+                    sender,
+
+                    "category":
+                    category
                 }
             )
 
+            scanned_count += 1
+
         except Exception as ex:
 
-            print(ex)
+            print(
+                f"Error processing email:"
+                f" {ex}"
+            )
 
-    save_email_report(results)
+    # ==========================================
+    # Save Reports
+    # ==========================================
 
-    save_category_summary(results)
+    save_email_report(
+        results
+    )
+
+    save_category_summary(
+        results
+    )
 
     save_sender_summary(
         sender_counter
     )
 
-    mail.logout()
+    save_mailbox_stats(
+        total_mailbox_count,
+        scanned_count
+    )
 
+    # ==========================================
+    # Final Summary
+    # ==========================================
 
-if __name__ == "__main__":
-    main()
+    print(
+        "\n================================"
+    )
+
+    print(
+        f"Total Mailbox
