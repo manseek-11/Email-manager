@@ -24,8 +24,9 @@ MAX_EMAILS = int(
     os.getenv("MAX_EMAILS", "500")
 )
 
+
 # ==========================================
-# Decode Email Text
+# Decode Email Headers
 # ==========================================
 
 def decode_text(text):
@@ -70,7 +71,7 @@ def get_body(msg):
                     part.get_content_type()
                 )
 
-                disposition = str(
+                content_disposition = str(
                     part.get(
                         "Content-Disposition"
                     )
@@ -79,13 +80,11 @@ def get_body(msg):
                 if (
                     content_type == "text/plain"
                     and "attachment"
-                    not in disposition.lower()
+                    not in content_disposition.lower()
                 ):
 
-                    payload = (
-                        part.get_payload(
-                            decode=True
-                        )
+                    payload = part.get_payload(
+                        decode=True
                     )
 
                     if payload:
@@ -131,12 +130,10 @@ def main():
     if not email_id or not password:
 
         raise Exception(
-            "EMAIL_ID or APP_PASSWORD missing."
+            "EMAIL_ID or APP_PASSWORD not provided."
         )
 
-    print(
-        "\nConnecting to Gmail..."
-    )
+    print("\nConnecting to Gmail...")
 
     mail = imaplib.IMAP4_SSL(
         IMAP_SERVER,
@@ -148,11 +145,11 @@ def main():
         password
     )
 
-    print(
-        "Login successful."
-    )
+    print("Login successful.")
 
-    mail.select("INBOX")
+    mail.select(
+        "INBOX"
+    )
 
     status, data = mail.search(
         None,
@@ -162,30 +159,34 @@ def main():
     if status != "OK":
 
         raise Exception(
-            "Failed to read mailbox."
+            "Unable to read mailbox."
         )
 
-    ids = data[0].split()
+    all_ids = data[0].split()
 
-    # Total emails currently present
-    total_mailbox_count = len(ids)
-
-    print(
-        f"\nTotal Emails in Mailbox: "
-        f"{total_mailbox_count}"
+    # Total emails currently present in mailbox
+    total_mail_count = len(
+        all_ids
     )
 
-    # Limit emails to scan
-    ids = ids[-MAX_EMAILS:]
+    print(
+        f"\nTotal Emails In Inbox: "
+        f"{total_mail_count}"
+    )
+
+    # Limit scan count
+    ids = all_ids[-MAX_EMAILS:]
 
     print(
-        f"Scanning Latest: "
-        f"{len(ids)} Emails\n"
+        f"Scanning latest "
+        f"{len(ids)} emails..."
     )
 
     results = []
 
     sender_counter = Counter()
+
+    category_counter = Counter()
 
     scanned_count = 0
 
@@ -220,7 +221,9 @@ def main():
                 )
             )
 
-            body = get_body(msg)
+            body = get_body(
+                msg
+            )
 
             category = categorize(
                 subject,
@@ -230,6 +233,10 @@ def main():
 
             sender_counter[
                 sender
+            ] += 1
+
+            category_counter[
+                category
             ] += 1
 
             results.append(
@@ -253,8 +260,7 @@ def main():
         except Exception as ex:
 
             print(
-                f"Error processing email:"
-                f" {ex}"
+                f"Error processing email: {ex}"
             )
 
     # ==========================================
@@ -274,17 +280,84 @@ def main():
     )
 
     save_mailbox_stats(
-        total_mailbox_count,
-        scanned_count
+        total_mail_count,
+        scanned_count,
+        len(sender_counter)
     )
 
     # ==========================================
-    # Final Summary
+    # Print Summary
     # ==========================================
 
     print(
-        "\n================================"
+        "\n=================================="
     )
 
     print(
-        f"Total Mailbox
+        f"Total Inbox Emails : "
+        f"{total_mail_count}"
+    )
+
+    print(
+        f"Emails Scanned     : "
+        f"{scanned_count}"
+    )
+
+    print(
+        f"Unique Senders     : "
+        f"{len(sender_counter)}"
+    )
+
+    print(
+        "\nCategory Summary"
+    )
+
+    print(
+        "---------------------------"
+    )
+
+    for category, count in (
+        category_counter.most_common()
+    ):
+
+        print(
+            f"{category:<20} {count}"
+        )
+
+    print(
+        "\nReports Generated"
+    )
+
+    print(
+        "- reports/email_report.csv"
+    )
+
+    print(
+        "- reports/category_summary.csv"
+    )
+
+    print(
+        "- reports/top_senders.csv"
+    )
+
+    print(
+        "- reports/mailbox_stats.csv"
+    )
+
+    print(
+        "=================================="
+    )
+
+    mail.logout()
+
+    print(
+        "\nCompleted Successfully."
+    )
+
+
+# ==========================================
+# Entry Point
+# ==========================================
+
+if __name__ == "__main__":
+    main()
